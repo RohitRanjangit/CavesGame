@@ -1,0 +1,65 @@
+#This Code is written in SageMath 9.0
+
+R.<x> = PolynomialRing(ZZ) #Creating  ring of Polynomials over Z
+
+def poly(a,i):  #To convert ith row of lattice to a polynomial
+    g = 0
+    for j in range(a.nrows()):
+        g += a[i,j]* x^j
+    return g
+
+from sage.crypto.util import ascii_to_bin
+
+def nicholas_howgrave(pol,h,X,N,l): # Implements the algorithm wriiten in the report and the paper.
+    pol = pol.change_ring(ZZ)  #Changing polynomial ring form Zn to Z.
+    x = pol.parent().gen()
+    k = pol.degree()
+    dim = k*h
+    m = matrix(ZZ,dim,dim)
+    f = x
+    for i in range (dim):
+        for j in range (dim):
+            v = floor(i/k)
+            u = i - k*v
+            temp = (f^u)*(pol^v)
+            m[i,j] = temp[j]*(N^(h-1-v))*(X^j)
+    
+    a = m
+    a = a.LLL()
+
+    mode = 1
+    if (mode):
+        a = a.transpose()
+
+        for i in range(a.nrows()):
+            a[i] /= X^i
+
+        a = a.transpose()
+
+        b = poly(a,0)
+        c = b.roots()
+        if (c):
+            #Gives the values of roots found and corresponding value of l
+            print("l = ",l)
+            print("The root in decimal is ",c[0][0])
+            print("The root in binary is ",c[0][0].binary())
+
+def main():
+    N = 84364443735725034864402554533826279174703893439763343343863260342756678609216895093779263028809246505955647572176682669445270008816481771701417554768871285020442403001649254405058303439906229201909599348669565697534331652019516409514800265887388539283381053937433496994442146419682027649079704982600857517093
+    C = 58851190819355714547275899558441715663746139847246075619270745338657007055698378740637742775361768899700888858087050662614318305443064448898026503556757610342938490741361643696285051867260278567896991927351964557374977619644763633229896668511752432222528159214013173319855645351619393871433455550581741643299
+    e = 5
+    p = "This door has RSA encryption with exponent 5 and the password is "
+    p = str(ascii_to_bin(p))
+    p = ZZ('0b'+p)  #converts binary to base-10
+    
+    ZmodN = Zmod(N);
+    
+    for l in range(1, 308):
+        P.<M> = PolynomialRing(ZmodN)  #constructing polynomial ring over Zn
+        pol = ((p<<l)+ M)^e - C  #constructing the polynomial (p*(2^l)+ M)^e - C
+        h = 3
+        X = floor((N^(1/9).n()))
+
+        nicholas_howgrave(pol,h,X,N,l)
+ 
+main()
